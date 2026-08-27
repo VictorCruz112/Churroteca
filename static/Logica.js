@@ -1,50 +1,6 @@
 (function(){
 'use strict';
 
-/* ---------------- storage (solo para productos temporalmente) ---------------- */
-const memoryStore = {};
-function hasCloud(){ return typeof window.storage !== 'undefined' && window.storage !== null; }
-
-async function storeGet(key, shared){
-  shared = !!shared;
-  if(hasCloud()){
-    try{ const r = await window.storage.get(key, shared); return r ? r.value : null; }
-    catch(e){ return null; }
-  }
-  const k = (shared?'s:':'p:')+key;
-  return Object.prototype.hasOwnProperty.call(memoryStore,k) ? memoryStore[k] : null;
-}
-async function storeSet(key, value, shared){
-  shared = !!shared;
-  if(hasCloud()){
-    try{ return await window.storage.set(key, value, shared); }
-    catch(e){ console.error('storage set failed', e); return null; }
-  }
-  const k = (shared?'s:':'p:')+key;
-  memoryStore[k]=value;
-  return {key, value, shared};
-}
-async function storeList(prefix, shared){
-  prefix = prefix || '';
-  shared = !!shared;
-  if(hasCloud()){
-    try{ const r = await window.storage.list(prefix, shared); return r || {keys:[]}; }
-    catch(e){ return {keys:[]}; }
-  }
-  const pfx=(shared?'s:':'p:')+prefix;
-  const keys = Object.keys(memoryStore).filter(k=>k.startsWith(pfx)).map(k=>k.slice(2));
-  return {keys};
-}
-async function storeDelete(key, shared){
-  shared=!!shared;
-  if(hasCloud()){
-    try{ return await window.storage.delete(key, shared); } catch(e){ return null; }
-  }
-  const k=(shared?'s:':'p:')+key;
-  delete memoryStore[k];
-  return {key, deleted:true, shared};
-}
-
 /* ---------------- iconos ---------------- */
 const ICONS = {
   pencil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
@@ -112,29 +68,6 @@ function initialsOf(name){
   if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
   return (parts[0][0]+parts[1][0]).toUpperCase();
 }
-function resizeImageFile(file, maxDim, quality){
-  maxDim = maxDim||900; quality = quality||0.85;
-  return new Promise((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onload = (e)=>{
-      const img = new Image();
-      img.onload = ()=>{
-        let w=img.width,h=img.height;
-        if(w>=h && w>maxDim){ h=Math.round(h*maxDim/w); w=maxDim; }
-        else if(h>w && h>maxDim){ w=Math.round(w*maxDim/h); h=maxDim; }
-        const canvas=document.createElement('canvas');
-        canvas.width=w; canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg',quality));
-      };
-      img.onerror=()=>reject(new Error('No se pudo leer la imagen'));
-      img.src=e.target.result;
-    };
-    reader.onerror=()=>reject(new Error('No se pudo leer el archivo'));
-    reader.readAsDataURL(file);
-  });
-}
-
 /* ---------------- toast ---------------- */
 function showToast(message, type){
   type = type||'default';
@@ -213,34 +146,11 @@ async function logoutUser() {
 }
 
 /* ---------------- productos ---------------- */
+// Los productos (nombre, precio, descripción, foto) vienen únicamente de
+// DEFAULT_PRODUCTS. Ningún usuario puede modificarlos desde el sitio: para
+// cambiar algo hay que editar esa constante aquí en el código.
 async function loadProducts(){
-  const merged = DEFAULT_PRODUCTS.map(p=>({...p}));
-  const listRes = await storeList('product:', true);
-  const keys = (listRes && listRes.keys) || [];
-  for(const key of keys){
-    const val = await storeGet(key, true);
-    if(val){
-      try{
-        const data = JSON.parse(val);
-        const idx = merged.findIndex(p=>p.id===data.id);
-        if(idx>=0) merged[idx] = Object.assign({}, merged[idx], data);
-        else merged.push(data);
-      }catch(e){}
-    }
-  }
-  products = merged;
-}
-async function saveProduct(product){
-  await storeSet('product:'+product.id, JSON.stringify(product), true);
-  const idx = products.findIndex(p=>p.id===product.id);
-  if(idx>=0) products[idx]=product; else products.push(product);
-}
-async function resetProduct(id){
-  const def = DEFAULT_PRODUCTS.find(p=>p.id===id);
-  if(!def) return;
-  await storeSet('product:'+id, JSON.stringify(def), true);
-  const idx = products.findIndex(p=>p.id===id);
-  if(idx>=0) products[idx]={...def};
+  products = DEFAULT_PRODUCTS.map(p=>({...p}));
 }
 
 /* ---------------- opiniones (Conectado a MySQL vía Flask) ---------------- */
@@ -302,7 +212,6 @@ function updateAuthUI(){
       rn.disabled = false;
     }
   }
-  document.getElementById('editHint').style.display = currentUser ? 'inline-flex' : 'none';
 }
 
 /* ---------------- render: valores ---------------- */
@@ -336,23 +245,14 @@ function renderProducts(){
     '<article class="product-card" data-reveal data-reveal-delay="'+((i%4)+1)+'">'+
       '<div class="product-media">'+
         productMedia(p)+
-        (currentUser?'<button type="button" class="media-edit-btn" data-edit-photo="'+p.id+'">'+ICONS.camera+'<span>Cambiar foto</span></button>':'')+
       '</div>'+
       '<div class="product-body">'+
-        '<div class="product-head"><h3>'+escapeHtml(p.name)+'</h3>'+
-        (currentUser?'<button type="button" class="icon-btn" data-edit-product="'+p.id+'" aria-label="Editar '+escapeHtml(p.name)+'">'+ICONS.pencil+'</button>':'')+
-        '</div>'+
+        '<div class="product-head"><h3>'+escapeHtml(p.name)+'</h3></div>'+
         '<p class="product-desc">'+escapeHtml(p.desc||'')+'</p>'+
         '<span class="price-tag">'+formatPrice(p.price)+'</span>'+
       '</div>'+
     '</article>'
   ).join('');
-  document.querySelectorAll('[data-edit-product]').forEach(btn=>{
-    btn.addEventListener('click', ()=>openEditModal(btn.getAttribute('data-edit-product')));
-  });
-  document.querySelectorAll('[data-edit-photo]').forEach(btn=>{
-    btn.addEventListener('click', ()=>openEditModal(btn.getAttribute('data-edit-photo'), true));
-  });
   setupReveal();
 }
 
@@ -526,96 +426,12 @@ function setupAuthForms(){
       renderProducts();
       closeModal('registerOverlay');
       document.getElementById('registerForm').reset();
-      showToast('¡Cuenta creada! Ya puedes editar el menú.','success');
+      showToast('¡Cuenta creada! Ya puedes comentar y dejar tu opinión.','success');
       burstConfetti(window.innerWidth/2, window.innerHeight/2);
     }catch(err){
       errBox.textContent = err.message;
       errBox.classList.add('show');
     }
-  });
-}
-
-/* ---------------- editar producto ---------------- */
-let pendingImageDataUrl = null;
-function openEditModal(productId, focusPhoto){
-  const p = products.find(x=>x.id===productId);
-  if(!p) return;
-  pendingImageDataUrl = null;
-  document.getElementById('editError').classList.remove('show');
-  document.getElementById('editProductId').value = p.id;
-  document.getElementById('editName').value = p.name;
-  document.getElementById('editPrice').value = p.price;
-  document.getElementById('editDesc').value = p.desc||'';
-  const preview = document.getElementById('editPhotoPreview');
-  const icon = document.getElementById('editPhotoIcon');
-  const label = document.getElementById('editPhotoLabel');
-  if(p.image){
-    preview.src = p.image; preview.style.display='block'; icon.style.display='none';
-    label.textContent='Toca para cambiar la foto';
-  } else {
-    preview.style.display='none'; icon.style.display='block';
-    label.textContent='Sube una foto real de este producto (opcional)';
-  }
-  openModal('editOverlay');
-  if(focusPhoto){ setTimeout(()=>document.getElementById('editPhotoInput').click(), 350); }
-}
-function setupEditForm(){
-  const photoInput = document.getElementById('editPhotoInput');
-  const photoDrop = document.getElementById('photoDrop');
-  photoDrop.addEventListener('dragover', (e)=>{ e.preventDefault(); });
-  photoDrop.addEventListener('drop', (e)=>{
-    e.preventDefault();
-    if(e.dataTransfer.files && e.dataTransfer.files[0]){
-      photoInput.files = e.dataTransfer.files;
-      photoInput.dispatchEvent(new Event('change'));
-    }
-  });
-  photoInput.addEventListener('change', async ()=>{
-    const file = photoInput.files[0];
-    if(!file) return;
-    if(!file.type.startsWith('image/')){
-      showToast('Por favor selecciona un archivo de imagen.','error');
-      return;
-    }
-    try{
-      const dataUrl = await resizeImageFile(file, 900, 0.85);
-      pendingImageDataUrl = dataUrl;
-      const preview = document.getElementById('editPhotoPreview');
-      preview.src = dataUrl; preview.style.display='block';
-      document.getElementById('editPhotoIcon').style.display='none';
-      document.getElementById('editPhotoLabel').textContent='Toca para cambiar la foto';
-    }catch(err){
-      showToast('No se pudo procesar la imagen.','error');
-    }
-  });
-
-  document.getElementById('editForm').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const id = document.getElementById('editProductId').value;
-    const existing = products.find(p=>p.id===id);
-    if(!existing) return;
-    const name = document.getElementById('editName').value.trim();
-    const price = parseFloat(document.getElementById('editPrice').value);
-    const desc = document.getElementById('editDesc').value.trim();
-    if(!name || isNaN(price) || price<0){
-      const errBox=document.getElementById('editError');
-      errBox.textContent='Revisa el nombre y el precio antes de guardar.';
-      errBox.classList.add('show');
-      return;
-    }
-    const updated = Object.assign({}, existing, {name, price, desc, image: pendingImageDataUrl || existing.image});
-    await saveProduct(updated);
-    renderProducts();
-    closeModal('editOverlay');
-    showToast('"'+name+'" se actualizó correctamente.','success');
-  });
-
-  document.getElementById('resetProductBtn').addEventListener('click', async ()=>{
-    const id = document.getElementById('editProductId').value;
-    await resetProduct(id);
-    renderProducts();
-    closeModal('editOverlay');
-    showToast('Producto restaurado a sus valores originales.');
   });
 }
 
@@ -689,7 +505,6 @@ async function init(){
   setupNav();
   setupModals();
   setupAuthForms();
-  setupEditForm();
   renderValues();
   renderTeam();
   try{

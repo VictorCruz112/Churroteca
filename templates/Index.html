@@ -91,10 +91,6 @@
         <h2>Sabores que enloquecen</h2>
         <p>Tres formas de disfrutar los churros locos, más un fresco natural para acompañar.</p>
       </div>
-      <span class="edit-hint" id="editHint" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-        Toca el lápiz para editar fotos, nombres y precios
-      </span>
     </div>
     <div class="products-grid" id="productsGrid"></div>
   </div>
@@ -242,7 +238,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
     </button>
     <h3 id="loginTitle">Bienvenido de nuevo</h3>
-    <p class="sub">Inicia sesión para editar el menú y dejar tu huella en Churroteca.</p>
+    <p class="sub">Inicia sesión para comentar y dejar tu opinión en Churroteca.</p>
     <div class="form-error" id="loginError"></div>
     <form id="loginForm">
       <div class="form-row">
@@ -266,7 +262,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
     </button>
     <h3 id="registerTitle">Crea tu cuenta</h3>
-    <p class="sub">Regístrate para poder editar el menú y personalizar Churroteca.</p>
+    <p class="sub">Regístrate para poder comentar y dejar tu opinión en Churroteca.</p>
     <div class="form-error" id="registerError"></div>
     <form id="registerForm">
       <div class="form-row">
@@ -291,42 +287,6 @@
   </div>
 </div>
 
-<!-- ================= MODAL: EDITAR PRODUCTO ================= -->
-<div class="modal-overlay" id="editOverlay">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
-    <button type="button" class="icon-btn modal-close" data-close-modal="editOverlay" aria-label="Cerrar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
-    </button>
-    <h3 id="editTitle">Editar producto</h3>
-    <p class="sub">Los cambios se guardan para todas las personas que visiten el sitio.</p>
-    <div class="form-error" id="editError"></div>
-    <form id="editForm">
-      <input type="hidden" id="editProductId">
-      <label class="photo-drop" id="photoDrop" for="editPhotoInput">
-        <img id="editPhotoPreview" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="editPhotoIcon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span id="editPhotoLabel">Sube una foto real de este producto (opcional)</span>
-      </label>
-      <input type="file" id="editPhotoInput" accept="image/*" class="visually-hidden">
-      <div class="form-row">
-        <label for="editName">Nombre del producto</label>
-        <input type="text" id="editName" required maxlength="46">
-      </div>
-      <div class="form-row">
-        <label for="editPrice">Precio (USD)</label>
-        <input type="number" id="editPrice" step="0.01" min="0" required>
-      </div>
-      <div class="form-row">
-        <label for="editDesc">Descripción</label>
-        <textarea id="editDesc" maxlength="140"></textarea>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button type="submit" class="btn btn-primary btn-block">Guardar cambios</button>
-      </div>
-      <button type="button" class="modal-switch" id="resetProductBtn" style="width:100%;margin-top:14px;background:none;border:none;">Restaurar valores originales</button>
-    </form>
-  </div>
-</div>
 <script src="{{ url_for('static', filename='Logica.js') }}"></script>
 </body>
 </html>
