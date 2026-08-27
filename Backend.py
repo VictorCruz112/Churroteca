@@ -10,7 +10,7 @@ app.secret_key = 'super_secreta_churroteca'
 db_config = {
     'host': 'churroteca-db-clases-41cd.i.aivencloud.com',
     'user': 'avnadmin',
-    'password': 'TU_CONTRASEÑA_DE_AIVEN',
+    'password': 'AVNS_5SE3Ngyl3zjSTmgylS2',
     'database': 'defaultdb',
     'port': 21514
 }
@@ -26,7 +26,7 @@ def obtener_conexion():
 @app.route('/')
 def inicio():
     # Flask busca 'index.html' (o 'Index.html') dentro de la carpeta 'templates'
-    return render_template('index.html')
+    return render_template('Index.html')
 
 # 2. Ruta para REGISTRAR un nuevo usuario
 @app.route('/api/registro', methods=['POST'])
