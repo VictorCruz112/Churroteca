@@ -8,12 +8,12 @@ app.secret_key = 'super_secreta_churroteca'
 
 # Configuración de tu base de datos MySQL local
 db_config = {
-    'host': 'localhost',
-    'user': 'root',          # Reemplaza con tu usuario de MySQL Workbench
-    'password': 'Vcruz2009#..', # Reemplaza con tu contraseña
-    'database': 'Datos'
+    'host': 'churroteca-db-clases-41cd.i.aivencloud.com',
+    'user': 'avnadmin',
+    'password': 'TU_CONTRASEÑA_DE_AIVEN',
+    'database': 'defaultdb',
+    'port': 21514
 }
-
 # Función para conectar a la base de datos
 def obtener_conexion():
     return mysql.connector.connect(**db_config)
